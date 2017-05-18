@@ -14,6 +14,7 @@
 //ActionOnAttack - action to invoke every time AI does melee attack
 //ActionOnDie - action to invoke when AI dies (hp is less than or equal to 0)
 //ActionOnSpawn - action to invoke when AI spawns on map
+//FlipDirection - flip forward direction of model
 //
 //Usage
 //1.Create an animated Entity
@@ -38,6 +39,7 @@
 		<property name="ActionOnAttack" type="action" />
 		<property name="ActionOnDie" type="action" />
 		<property name="ActionOnSpawn" type="action" />
+		<property name="FlipDirection" type="bool" default="false" />
 	</behavior>
 */
 
@@ -108,7 +110,12 @@ behavior_meleeAI.prototype.onAnimate = function(currentnode, timeMs){
 			bMovingForward = true;
 			if (bMovingForward){
 				//make it go the other way by making directionForward.x and z plus instead of minus
-				var angley = Math.atan2(-directionForward.x, -directionForward.z) * (180.0 / 3.14159265358);
+				var angley=0;
+				if (this.FlipDirection==true){
+					angley = Math.atan2(-directionForward.x, -directionForward.z) * (180.0 / 3.14159265358);
+				}else{
+					angley = Math.atan2(directionForward.x, directionForward.z) * (180.0 / 3.14159265358);
+				}				
 				if (angley < 0.0) angley += 360.0;
 				if (angley >= 360.0) angley -= 360.0;
 				ccbSetSceneNodeProperty(currentnode, 'Rotation', 0.0, angley, 0.0);
@@ -125,12 +132,28 @@ behavior_meleeAI.prototype.onAnimate = function(currentnode, timeMs){
 			//Animate Walk
 			ccbSetSceneNodeProperty(currentnode, 'Animation', this.WalkAnim);ccbSetSceneNodeProperty(currentnode, 'Looping', true);
 		}
-	}else if(this.mode == mode_attack){
+	}else if(this.mode == mode_attack){		
 		if (timeMs >= this.NextTime){
 			this.didAction=false;	//reset didAction
 			this.NextTime = timeMs + this.MeleeWait;
 			this.mode = mode_wait;
 		}
+		
+		//face player
+		var angley=0;
+		var directionForward = new vector3d(0.0,0,0.0);
+		var pos = ccbGetSceneNodeProperty(currentnode, 'Position');
+		directionForward = targetpos.substract(pos);
+		directionForward.Y = 0 ;
+
+		if (this.FlipDirection==true){
+			angley = Math.atan2(-directionForward.x, -directionForward.z) * (180.0 / 3.14159265358);
+		}else{
+			angley = Math.atan2(directionForward.x, directionForward.z) * (180.0 / 3.14159265358);
+		}				
+		if (angley < 0.0) angley += 360.0;
+		if (angley >= 360.0) angley -= 360.0;
+		ccbSetSceneNodeProperty(currentnode, 'Rotation', 0.0, angley, 0.0);
 		
 		//do action halfway of melee
 		if (this.didAction==false && timeMs >= this.NextTime - this.MeleeAnimTime/2){
